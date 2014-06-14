@@ -1,0 +1,7 @@
+mkdir(BUILD)
+mkdir(CACHE)
+message('PREFIX=%s' % PREFIX, 'info')
+message('HOME=%s' % HOME, 'info')
+message('BUILD=%s' % BUILD, 'info')
+message('FILES=%s' % FILES, 'info')
+message('CACHE=%s' % CACHE, 'info')
