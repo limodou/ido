@@ -84,7 +84,7 @@ def get_input(prompt, default=None, choices=None, option_value=None):
 
 __commands__ = {}
 
-def get_commands(modules):
+def get_commands(modules=None):
     global __commands__
     
     def check(c):
@@ -98,7 +98,7 @@ def get_commands(modules):
                 register_command(c)
         
     def collect_commands():
-        for m in modules:
+        for m in modules or []:
             try:
                 mod = __import__(m, fromlist=['*'])
             except ImportError as e:
@@ -308,7 +308,7 @@ class CommandManager(Command):
         def print_help(global_options):
             parser.print_help()
             sys.stderr.write(self.print_help_info(global_options) + '\n')
-            sys.exit(1)
+            sys.exit(0)
             
         if len(args) == 0:
             if global_options.version:

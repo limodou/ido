@@ -8,8 +8,9 @@ import os, sys
 import datetime
 import inspect
 import traceback
+import re
 from optparse import make_option
-from .commands import call, register_command, Command, get_answer, get_input
+from .commands import register_command, Command, get_answer, get_input
 
 from colorama import init, Fore, Back, Style
 init(autoreset=True)
@@ -27,6 +28,11 @@ class ObjectDict(dict):
 
     def __setattr__(self, name, value):
         self[name] = value
+
+r_ansi = re.compile(r'\x1b\[\d+\w')
+def strip_color(msg):
+    msg = r_ansi.sub('', msg)
+    return msg
 
 class InstallCommand(Command):
     """
@@ -47,6 +53,8 @@ class InstallCommand(Command):
             help='Log filename the shell outut will be written in it.'),
         make_option('-f', '--files', dest='files', default='',
             help='Source packages storage directory.'),
+        make_option('--nocolor', dest='nocolor', default=False, action='store_true',
+            help='Output result without color.'),
    )
 
     def collection_index(self, options):
@@ -178,15 +186,20 @@ class InstallCommand(Command):
         RESET = Fore.RESET + Back.RESET + Style.RESET_ALL
 
         if _type == 'error':
-            print (Fore.RED+'Error: '+msg)
+            t = (Fore.RED+'Error: '+msg)
         elif _type == 'cmd':
-            print (Fore.BLUE+Style.BRIGHT+'   do: '+Fore.MAGENTA+msg)
+            t = (Fore.BLUE+Style.BRIGHT+'   do: '+Fore.MAGENTA+msg)
         elif _type == 'install':
-            print (Fore.BLUE+Style.BRIGHT+'<< '+msg)
+            t = (Fore.BLUE+Style.BRIGHT+'<< '+msg)
         elif _type == 'info':
-            print (Fore.GREEN+'      '+msg)
+            t = (Fore.GREEN+'      '+msg)
         else:
-            print (msg)
+            t = (msg)
+
+        if self.options.nocolor:
+            print (strip_color(t))
+        else:
+            print (t)
 
         if self.log:
             self.log.write(msg)
@@ -194,5 +207,16 @@ class InstallCommand(Command):
 
 register_command(InstallCommand)
 
+def call(args=None):
+    from .commands import execute_command_line, get_commands
+
+    if isinstance(args, str):
+        import shlex
+        args = shlex.split(args)
+
+    execute_command_line(args or sys.argv, get_commands(), prog_name='ido')
+
 def main():
+    from .commands import call
+
     call('ido', __version__)
