@@ -1,3 +1,5 @@
+![ci](https://travis-ci.org/limodou/ido.svg?branch=master)
+
 # ido
 
 ## What's it?
