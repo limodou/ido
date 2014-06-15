@@ -11,13 +11,13 @@ But ido can be more easy used and extended suit for your needs.
 ## Features
 
 * Simple core
-* color command output
-* packages or commands collection should be origanize in a directory
+* Color command output
+* Packages or commands collection should be organized in a directory
 * Installation script file is common Python source file
 * Builtin rich functions and you can easily extend
 * Packages installation aim user home first
-* Depends files can be stored in disk depends on your installation script
-* User can make themself tool based on ido to customize their application requirements
+* Depends files can be stored in disk depending on your installation script
+* User can create tool themselves based on ido to customize their application requirements
 * Written in Python, should be support 2.6, 2.7, 3.3, 3.4
 
 ## Install
@@ -140,8 +140,8 @@ to see the help messages.
 
 ### Pass variables to script
 
-If you have some viriables and want to pass them to install script, so you can define them
-in command argument, just like:
+If you have some variables and want to pass them to install script, so you can define them
+in command argument, eg:
 
 ```
 ido install zlib -Evar1=demo1 -Evar2=demo2
@@ -149,13 +149,13 @@ ido install zlib -Evar1=demo1 -Evar2=demo2
 
 ### See exception
 
-Sometime the script will throw exceptions, but they'll be hidden by default, and if you want
+Sometimes the script will throw exceptions, but they'll be hidden by default, and if you want
 to see them you can just pass `-v` to see them.
 
 ## Build your own packages system
 
-For now, ido ships only few packages, so it seems that it's useless. But you can use it
-to build your own packages system, that's it useful.
+For now, ido ships with only a few packages, so it seems that it's useless. But you can use it
+to build your own packages system, to make it useful.
 
 You can give index url or directory like this:
 
