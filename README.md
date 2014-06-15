@@ -70,7 +70,7 @@ There are also some builtin functions, objects or modules, such as:
     * `cp()` Used to copy a source file(can use fnmatch to match the filename) to destination directory or file, `cp('zlib*', BUILD)`
     * `install()` Used to install other package, `install('zlib')`
     * `message()` Used to output colored message, `message(msg, 'error')`, the second argument
-      will be `error`, `info`, or just omited.
+      will be `error`, `info`, or just omitted.
 * Color Objects
     * `Fore`, `Back`, `Style` They are colorama objects, so you can use them directly.
 
@@ -83,7 +83,7 @@ line just like:
 
 ```
 ido install zlib -i ~/packages
-ido install jdk -i https://yourname/packages (Not implemented yet)
+ido install zlib -i https://yourname/packages (Not implemented yet)
 ido install zlib -i ~/packages -i https://yourname/packages
 ```
 
