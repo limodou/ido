@@ -2,7 +2,7 @@ import sys
 sys.path.insert(0, '..')
 from ido import call
 
-def test_command_1():
+def test_demo():
     """
     >>> call('ido install demo --nocolor')
     << Installing package demo
