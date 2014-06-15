@@ -34,7 +34,66 @@ def strip_color(msg):
     msg = r_ansi.sub('', msg)
     return msg
 
-class InstallCommand(Command):
+class BaseCommand(Command):
+    quiet = False
+    log = None
+
+    def find_package_script(self, indexes, package):
+        for i in indexes:
+            install_script = os.path.join(i, package, 'install.py')
+            #test if is locally
+            if os.path.exists(install_script):
+                if self.global_options.verbose:
+                    self.message('Found script file %s of %s' % (install_script, Fore.GREEN+Style.BRIGHT+package), 'prompt')
+                return install_script, open(install_script).read()
+
+            #test if is in the net
+
+    def collection_index(self):
+        """
+        Collection index link to self.indexes, the order should be:
+        1. command argument
+        2. environment
+        3. default packages directory
+        """
+
+        indexes = self.options.index
+        if 'IDO_PACKAGES' in os.environ:
+            indexes.extend(os.environ['IDO_PACKAGES'].split(';'))
+
+        indexes.append(os.path.join(os.path.dirname(__file__), 'packages').replace('\\', '/'))
+        return indexes
+
+    def message(self, msg, _type=''):
+
+        if self.quiet:
+            return
+
+        RESET = Fore.RESET + Back.RESET + Style.RESET_ALL
+
+        if _type == 'error':
+            t = (Fore.RED+'Error: '+msg)
+        elif _type == 'cmd':
+            t = (Fore.BLUE+Style.BRIGHT+'   do: '+Fore.MAGENTA+msg)
+        elif _type == 'install':
+            t = (Fore.BLUE+Style.BRIGHT+'<< '+msg)
+        elif _type == 'info':
+            t = (Fore.GREEN+'      '+msg)
+        elif _type == 'prompt':
+            t = (Fore.YELLOW+msg)
+        else:
+            t = (msg)
+
+        if self.options.nocolor:
+            print (strip_color(t))
+        else:
+            print (t+Fore.RESET+Back.RESET+Style.RESET_ALL)
+
+        if self.log:
+            self.log.write(msg)
+            self.log.write('\n')
+
+class InstallCommand(BaseCommand):
     """
     Install a package, the package will be searched order by:
 
@@ -57,30 +116,11 @@ class InstallCommand(Command):
             help='Output result without color.'),
    )
 
-    def collection_index(self, options):
-        """
-        Collection index link to self.indexes, the order should be:
-        1. command argument
-        2. environment
-        3. default packages directory
-        """
-
-        self.indexes = options.index
-        if 'IDO_PACKAGES' in os.environ:
-            self.indexes.append(os.environ['IDO_PACKAGES'])
-
-        self.indexes.append(os.path.join(os.path.dirname(__file__), 'packages').replace('\\', '/'))
-
-    def find_package_script(self, package):
-        for i in self.indexes:
-            install_script = os.path.join(i, package, 'install.py')
-            #test if is locally
-            if os.path.exists(install_script):
-                return install_script, open(install_script).read()
-
-            #test if is in the net
-
     def handle(self, options, global_options, *args):
+        if len(args) == 0:
+            self.message("You should give at least one package name.")
+            return
+
         self.verbose = global_options.verbose
         self.log = None
         if options.log:
@@ -91,7 +131,7 @@ class InstallCommand(Command):
             log_file = '/tmp/ido.log'
             self.log = open(log_file, 'w')
 
-        self.collection_index(options)
+        self.indexes = self.collection_index()
 
         self.quiet = True
         self.install('ido_init')
@@ -105,7 +145,7 @@ class InstallCommand(Command):
                 log_file = self.log.name
                 self.log.close()
                 self.log = None
-                self.message("The shell command result can be see in %s" % log_file)
+                self.message("The shell command result can be see in %s" % (Fore.BLUE+Style.BRIGHT+log_file), 'prompt')
 
     def make_env(self, script, code):
         from . import utils
@@ -150,7 +190,7 @@ class InstallCommand(Command):
     def install(self, package, first=False):
         from future.utils import exec_
 
-        script = self.find_package_script(package)
+        script = self.find_package_script(self.indexes, package)
         if script:
             script, code = script
         else:
@@ -178,34 +218,53 @@ class InstallCommand(Command):
             else:
                 raise
 
-    def message(self, msg, _type=''):
-
-        if self.quiet:
-            return
-
-        RESET = Fore.RESET + Back.RESET + Style.RESET_ALL
-
-        if _type == 'error':
-            t = (Fore.RED+'Error: '+msg)
-        elif _type == 'cmd':
-            t = (Fore.BLUE+Style.BRIGHT+'   do: '+Fore.MAGENTA+msg)
-        elif _type == 'install':
-            t = (Fore.BLUE+Style.BRIGHT+'<< '+msg)
-        elif _type == 'info':
-            t = (Fore.GREEN+'      '+msg)
-        else:
-            t = (msg)
-
-        if self.options.nocolor:
-            print (strip_color(t))
-        else:
-            print (t)
-
-        if self.log:
-            self.log.write(msg)
-            self.log.write('\n')
 
 register_command(InstallCommand)
+
+class ViewPackageCommand(BaseCommand):
+    """
+    View install.py of a package
+
+    """
+    name = 'view'
+    help = ("View install.py of a package")
+    args = 'package'
+    option_list = (
+        make_option('-i', '--index', dest='index', default=[], action='append',
+            help='Package index link, it can be a directory or an url.'),
+        make_option('-e', '--editor', dest='editor', default='vi',
+            help='Editor used to open install.py of the package.'),
+        make_option('-d', '--display', dest='display', default=False, action='store_true',
+            help='Just display install.py content but not edit it.'),
+        make_option('--nocolor', dest='nocolor', default=False, action='store_true',
+            help='Output result without color.'),
+   )
+
+    def handle(self, options, global_options, *args):
+        if len(args) == 0:
+            self.message("You should give at least one package name.")
+            return
+
+        indexes = self.collection_index()
+
+        script = self.find_package_script(indexes, args[0])
+        if script:
+            script, code = script
+            if options.display:
+                print (code)
+            else:
+                if os.path.exists(script):
+                    os.system('%s %s' % (options.editor, script))
+                else:
+                    _file = '/tmp/%s' % script.replace('/', '_')
+                    self.message('The file is not existed locally so save it to %s' % _file)
+                    open(_file, 'w').write(code)
+                    os.system('%s %s' % (options.editor, _file))
+        else:
+            self.message("Can't find the installation script of package %s" % (Fore.GREEN+Style.BRIGHT+package), 'error')
+
+
+register_command(ViewPackageCommand)
 
 def call(args=None):
     from .commands import execute_command_line, get_commands
