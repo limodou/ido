@@ -241,3 +241,6 @@ def mkdir(path)
 
 It'll check if the `path` is already existed, if not then make directories using `os.makedirs`
 
+## License
+
+New BSD
