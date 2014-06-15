@@ -30,9 +30,9 @@ This will only include the examples packages, such as demo, etc.
 
 ## Requirement
 
-ido need: future, colorama packages, and it'll be installed automatically.
+ido needs: The `future`, `colorama` packages, and they be installed automatically.
 
-ido should be run in python 2.6+.
+ido currently supports Python 2.6+.
 
 ## Usage
 
@@ -79,7 +79,7 @@ View the given package install.py content in editor or just display to console
 
 ### Package install script
 
-A package should be a directory, and there should be a file named `install.py`.
+A package should have a directory, and in it there must be a file called `install.py`.
 Do you can write script just with python at all.
 
 The `install.py` is just a common python file, but it'll be executed with `exec()`,
@@ -109,7 +109,7 @@ There are also some builtin functions, objects or modules, such as:
 
 ### Packages Index
 
-All packages should be saved in a directory, I called it `index`, and ido can search package from them. ido
+Packages should be saved in a directory, I called it `index`, and ido can search package from them. ido
 can support multiple source of index, the default is shipped in ido package, it's `ido/packages`
 And ido also support other local directoires or url links, so you can pass them in command
 line just like:
