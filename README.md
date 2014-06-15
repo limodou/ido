@@ -4,9 +4,9 @@
 
 ## What's it?
 
-ido is a command tool, it's written in python, and you can use it to install packages or
-execute commands. So you can just treats it as something like brew, yum, apt-get, etc.
-But ido can be more easy used and extended suit for your needs.
+ido is a command line tool, written in Python, and you can use it to install packages or
+execute commands. It works like brew, yum, apt-get, etc.
+But ido can be more easily used and extended to suit your needs.
 
 ## Features
 
