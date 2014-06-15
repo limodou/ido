@@ -6,6 +6,7 @@ python:
     - "3.4"
 
 install:
+    - pip install tox
     - pip install -q -e . --use-mirrors
 script:
     - tox
