@@ -1,0 +1,5 @@
+zlib = cp('zlib*', BUILD, wget='http://zlib.net/zlib-1.2.8.tar.gz')
+cd(BUILD)
+cd(tarx(zlib))
+sh('./configure --prefix=%s' % PREFIX)
+sh('make install')

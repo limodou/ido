@@ -49,7 +49,7 @@ def get_source_files(self):
 setattr(b.build_py, 'get_source_files', get_source_files)
 
 setup(name='ido',
-    version='0.1',
+    version='0.2',
     description="A command tool used to install packages and execute commands.",
     long_description=__doc__,
     classifiers=[
@@ -77,5 +77,5 @@ setup(name='ido',
             'ido = ido:main',
         ],
     },
-    install_requires=['future', 'colorama']
+    install_requires=['future', 'colorama', 'requests']
 )

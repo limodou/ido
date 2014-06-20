@@ -1,0 +1,5 @@
+pcre = cp('pcre*', BUILD, wget='ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.35.tar.gz')
+cd(BUILD)
+cd(tarx(pcre))
+sh('./configure --prefix=%s' % PREFIX)
+sh('make install')

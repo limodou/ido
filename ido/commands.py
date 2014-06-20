@@ -348,11 +348,11 @@ class CommandManager(Command):
 class ApplicationCommandManager(CommandManager):
     option_list = (
         make_option('--help', action='store_true', dest='help',
-            help='show this help message and exit.'),
+            help='Show this help message and exit.'),
         make_option('-v', '--verbose', action='store_true', 
             help='Output the result in verbose mode.'),
         make_option('--version', action='store_true', dest='version',
-            help="show program's version number and exit."),
+            help="Show program's version number and exit."),
     )
     help = ''
     args = ''

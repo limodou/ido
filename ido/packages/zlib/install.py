@@ -1,7 +1,0 @@
-filename = wget('http://zlib.net/zlib-1.2.8.tar.gz')
-filename = cp(filename, BUILD)
-cd(BUILD)
-sh('tar xvfz %s' % filename)
-cd('zlib-1.2.8')
-sh('./configure --prefix=%s' % PREFIX)
-sh('make')

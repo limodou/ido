@@ -1,9 +1,6 @@
 from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import unicode_literals
-
-__version__ = '0.1'
-
 import os, sys
 import datetime
 import inspect
@@ -11,8 +8,11 @@ import traceback
 import re
 from optparse import make_option
 from .commands import register_command, Command, get_answer, get_input
-
 from colorama import init, Fore, Back, Style
+from functools import partial
+
+__version__ = '0.2'
+
 init(autoreset=True)
 
 class Error(Exception): pass
@@ -29,7 +29,31 @@ class ObjectDict(dict):
     def __setattr__(self, name, value):
         self[name] = value
 
-r_ansi = re.compile(r'\x1b\[\d+\w')
+def import_(path):
+    """
+    Import string format module, e.g. 'uliweb.orm' or an object
+    return module object and object
+    """
+    if isinstance(path, str):
+        v = path.split(':')
+        if len(v) == 1:
+            x = path.rsplit('.', 1)
+            if len(x) == 2:
+                module, func = x
+            else:
+                module, func = x[0], ''
+        else:
+            module, func = v
+        mod = __import__(module)
+        f = mod
+        if func:
+            for x in func.split('.'):
+                f = getattr(f, x)
+    else:
+        f = path
+    return f
+
+r_ansi = re.compile(r'\x1b\[\d+\w(;\d+\w)*')
 def strip_color(msg):
     msg = r_ansi.sub('', msg)
     return msg
@@ -37,17 +61,36 @@ def strip_color(msg):
 class BaseCommand(Command):
     quiet = False
     log = None
+    indent = 0
 
     def find_package_script(self, indexes, package):
-        for i in indexes:
-            install_script = os.path.join(i, package, 'install.py')
-            #test if is locally
-            if os.path.exists(install_script):
-                if self.global_options.verbose:
-                    self.message('Found script file %s of %s' % (install_script, Fore.GREEN+Style.BRIGHT+package), 'prompt')
-                return install_script, open(install_script).read()
+        import requests
 
+        for i in indexes:
+            package_install_script = os.path.join(i, package, 'install.py')
+            package_script = os.path.join(i, '%s.py' % package)
+            #test if is locally
+            for f in [package_install_script, package_script]:
+                if os.path.exists(f):
+                    self.message('Found script file %s of %s' % (f, Fore.GREEN+Style.BRIGHT+package), 'prompt')
+                    return f, open(f).read()
             #test if is in the net
+            if '://' in i:
+                for f in [package_install_script, package_script]:
+                    try:
+                        r = requests.get(f)
+                        if r.status_code == 404:
+                            continue
+                        self.message('Found script file %s of %s' % (f, Fore.GREEN+Style.BRIGHT+package), 'prompt')
+                        return f, r.content
+                    except Exception as e:
+                        if self.verbose:
+                            type, value, tb = sys.exc_info()
+                            txt =  ''.join(traceback.format_exception(type, value, tb))
+                            print (txt)
+                        self.message('Get %s error!' % f, 'error')
+                        continue
+
 
     def collection_index(self):
         """
@@ -58,29 +101,31 @@ class BaseCommand(Command):
         """
 
         indexes = self.options.index
-        if 'IDO_PACKAGES' in os.environ:
-            indexes.extend(os.environ['IDO_PACKAGES'].split(';'))
+        if 'IDO_INDEXES' in os.environ:
+            indexes.extend(os.environ['IDO_INDEXES'].split(';'))
 
         indexes.append(os.path.join(os.path.dirname(__file__), 'packages').replace('\\', '/'))
         return indexes
 
-    def message(self, msg, _type=''):
+    def message(self, msg, _type='', indent=0):
 
         if self.quiet:
             return
 
+        indent = self.indent + indent
+
         RESET = Fore.RESET + Back.RESET + Style.RESET_ALL
 
         if _type == 'error':
-            t = (Fore.RED+'Error: '+msg)
+            t = (Fore.RED + ' '*indent + 'Error: ' + msg)
         elif _type == 'cmd':
-            t = (Fore.BLUE+Style.BRIGHT+'   do: '+Fore.MAGENTA+msg)
+            t = (Fore.BLUE + Style.BRIGHT + ' '*indent + '==> ' + Fore.MAGENTA + msg)
         elif _type == 'install':
-            t = (Fore.BLUE+Style.BRIGHT+'<< '+msg)
+            t = (Fore.BLUE + Style.BRIGHT + ' '*indent + '--> ' + msg)
         elif _type == 'info':
-            t = (Fore.GREEN+'      '+msg)
+            t = (Fore.WHITE + ' '*indent + msg)
         elif _type == 'prompt':
-            t = (Fore.YELLOW+msg)
+            t = (Fore.YELLOW + ' '*indent + '#   ' + msg)
         else:
             t = (msg)
 
@@ -90,7 +135,7 @@ class BaseCommand(Command):
             print (t+Fore.RESET+Back.RESET+Style.RESET_ALL)
 
         if self.log:
-            self.log.write(msg)
+            self.log.write(strip_color(t))
             self.log.write('\n')
 
 class InstallCommand(BaseCommand):
@@ -114,6 +159,10 @@ class InstallCommand(BaseCommand):
             help='Source packages storage directory.'),
         make_option('--nocolor', dest='nocolor', default=False, action='store_true',
             help='Output result without color.'),
+        make_option('-c', '--config', dest='config', default='~/.ido/settings.py',
+            help="Config file."),
+        make_option('-e', '--error', dest='error', default=False, action='store_true',
+            help="Display error messages."),
    )
 
     def handle(self, options, global_options, *args):
@@ -123,6 +172,7 @@ class InstallCommand(BaseCommand):
 
         self.verbose = global_options.verbose
         self.log = None
+        self.indent = 0
         if options.log:
             self.log = open(options.log, 'w')
         elif not self.verbose:
@@ -133,7 +183,16 @@ class InstallCommand(BaseCommand):
 
         self.indexes = self.collection_index()
 
-        self.quiet = True
+        self.read_settings()
+        if 'INDEXES' in self.settings:
+            for p in self.settings['INDEXES']:
+                if p not in self.indexes:
+                    self.indexes.insert(0, p)
+
+        if not self.verbose:
+            self.quiet = True
+        else:
+            self.quiet = False
         self.install('ido_init')
         self.quiet = False
 
@@ -147,48 +206,97 @@ class InstallCommand(BaseCommand):
                 self.log = None
                 self.message("The shell command result can be see in %s" % (Fore.BLUE+Style.BRIGHT+log_file), 'prompt')
 
+    def read_settings(self):
+        e = {}
+        settings_file = os.path.expanduser(self.options.config)
+        if os.path.exists(settings_file):
+            if self.verbose:
+                self.message("Using settings file %s" % settings_file, 'prompt')
+            code = open(settings_file).read()
+            self.settings = self.exec_code(settings_file, code, e)
+        else:
+            self.settings = {}
+
     def make_env(self, script, code):
         from . import utils
 
+        #load settings file
         d = {}
+        d['INDEXES'] = self.indexes
         self.build = d['BUILD'] = '/tmp/ido_packages_build'
         self.cache = d['CACHE'] = os.path.expandvars('$HOME/.ido/cache')
         #PREFIX will be used to install package with prefix=
         #it can be set in environment variables as IDO_PREFIX
         #or passed in command argumanet -p --prefix
-        self.prefix = d['PREFIX'] = self.options.prefix or os.environ.get('IDO_PREFIX', '')
+        self.prefix = d['PREFIX'] = os.path.expanduser(os.path.expandvars(self.options.prefix \
+                                    or self.settings.get('PREFIX', '') \
+                                    or os.environ.get('IDO_PREFIX', '')))
         self.home = d['HOME'] = os.environ['HOME']
-        self.files = d['FILES'] = self.options.files or os.environ.get('IDO_FILES', '')
-        d['install'] = self.install
+        self.files = d['FILES'] = os.path.expanduser(os.path.expandvars(self.options.files \
+                                    or self.settings.get('FILES', '') \
+                                    or os.environ.get('IDO_FILES', '')))
+        d['install'] = partial(self.install, indent=self.indent+4)
 
         for k in dir(utils):
             v = getattr(utils, k)
             if inspect.isclass(v) and issubclass(v, utils.Function):
                 if not v.name: continue
                 inst = v(build=self, log=self.log, verbose=self.global_options.verbose,
-                         message=self.message)
+                         message=partial(self.message, indent=self.indent))
                 d[inst.name] = inst
 
         d['os'] = os
         d['sys'] = sys
 
-        d['message'] = self.message
+        d['message'] = partial(self.message, indent=self.indent)
 
         d['Fore'] = Fore
         d['Back'] = Back
         d['Style'] = Style
 
-        d['__name__'] = script
-        d['__loader__'] = ObjectDict(get_source=lambda name: code)
-
         for x in self.options.vars:
             k, v = (x.split('=') + [''])[:2]
             d[k] = v
 
+        #process settings pre_load
+        if 'PRE_LOAD' in self.settings:
+            for path, name in self.settings['PRE_LOAD']:
+                mod = import_(path)
+                #import all
+                if name == '*':
+                    for k in getattr(mod, '__all__', []):
+                        d[k] = getattr(mod, k)
+                #import multi vars
+                elif isinstance(name, (tuple, list)):
+                    for k in name:
+                        d[k] = getattr(mod, k)
+                #rename
+                else:
+                    d[name] = mod
+
         return d
 
-    def install(self, package, first=False):
+    def exec_code(self, filename, code, env):
         from future.utils import exec_
+
+        try:
+            env['__name__'] = filename
+            env['__loader__'] = ObjectDict(get_source=lambda name: code)
+
+            c_code = compile(code, filename, 'exec', dont_inherit=True)
+            exec_(c_code, env)
+            return env
+        except Exception as e:
+            if self.verbose or self.options.error:
+                type, value, tb = sys.exc_info()
+                txt =  ''.join(traceback.format_exception(type, value, tb))
+                print (txt)
+            raise
+
+
+    def install(self, package, first=False, indent=0):
+        old_indent = self.indent
+        self.indent = indent
 
         script = self.find_package_script(self.indexes, package)
         if script:
@@ -201,22 +309,17 @@ class InstallCommand(BaseCommand):
                 raise Error("Can't find the installation script of package %s" % package)
 
         self.message("Installing package %s" % (Fore.GREEN+package), 'install')
+        d = self.make_env(script, code)
         try:
-            d = self.make_env(script, code)
-            c_code = compile(code, script, 'exec', dont_inherit=True)
-            exec_(c_code, d)
+            self.exec_code(script, code, d)
             self.message("Installing package %s completed." % package, 'info')
-            flag = True
         except Exception as e:
-            flag = False
-            if self.verbose:
-                type, value, tb = sys.exc_info()
-                txt =  ''.join(traceback.format_exception(type, value, tb))
-                print (txt)
             if first:
                 self.message("Installing package %s failed." % package, 'error')
             else:
                 raise
+        finally:
+            self.indent = old_indent
 
 
 register_command(InstallCommand)
@@ -261,7 +364,7 @@ class ViewPackageCommand(BaseCommand):
                     open(_file, 'w').write(code)
                     os.system('%s %s' % (options.editor, _file))
         else:
-            self.message("Can't find the installation script of package %s" % (Fore.GREEN+Style.BRIGHT+package), 'error')
+            self.message("Can't find the installation script of package %s" % (Fore.GREEN+Style.BRIGHT+args[0]), 'error')
 
 
 register_command(ViewPackageCommand)

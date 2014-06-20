@@ -1,0 +1,4 @@
+INDEXES = []
+PREFIX = '$HOME/env'
+FILES = '$HOME/files'
+PRE_LOAD = {'sh':'SH'}

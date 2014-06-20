@@ -1,0 +1,10 @@
+pcre = cp('pcre*', BUILD)
+zlib = cp('zlib*', BUILD)
+nginx = cp('nginx*', BUILD)
+cd(BUILD)
+tarx(pcre)
+tarx(zlib)
+cd(tarx(nginx))
+sh('./configure --prefix=%s --with-pcre=%s --with-zlib=%s' % (PREFIX, '../pcre-8.33', '../zlib-1.2.8' ))
+sh('make install')
+

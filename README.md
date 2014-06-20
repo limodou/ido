@@ -12,12 +12,14 @@ But ido can be more easily used and extended to suit your needs.
 
 * Simple core
 * Color command output
-* Packages or commands collection should be organized in a directory
+* Packages or commands collection should be organized in a directory or a python file
 * Installation script file is common Python source file
+* Installation script can be searched from local disk or net
 * Builtin rich functions and you can easily extend
 * Packages installation aim user home first
-* Depends files can be stored in disk depending on your installation script
-* User can create tool themselves based on ido to customize their application requirements
+* Depends files can be searched from disk
+* User can create tool themselves based on ido to suit for their application needs
+* Some configuration can be saved in settings.py
 * Written in Python, should be support 2.6, 2.7, 3.3, 3.4
 
 ## Install
@@ -26,11 +28,11 @@ But ido can be more easily used and extended to suit your needs.
 pip install ido
 ```
 
-This will only include the examples packages, such as demo, etc.
+This will only include the examples packages, such as demo, zlib, nginx, redis, etc.
 
 ## Requirement
 
-ido needs: The `future`, `colorama` packages, and they be installed automatically.
+ido needs: The `future`, `colorama`, `requests` packages, and they be installed automatically.
 
 ido currently supports Python 2.6+.
 
@@ -65,6 +67,8 @@ Options:
   -f FILES, --files=FILES
                         Source packages storage directory.
   --nocolor             Output result without color.
+  -c CONFIG, --config=CONFIG
+                        Config file.
 ```
 
 
@@ -77,9 +81,26 @@ ido view package
 View the given package install.py content in editor or just display to console
 (with `-d` option in command line).
 
+```
+ido help view
+
+Usage: ido view [options] package
+
+View install.py of a package
+
+Options:
+  -i INDEX, --index=INDEX
+                        Package index link, it can be a directory or an url.
+  -e EDITOR, --editor=EDITOR
+                        Editor used to open install.py of the package.
+  -d, --display         Just display install.py content but not edit it.
+  --nocolor             Output result without color.
+```
+
 ### Package install script
 
-A package should have a directory, and in it there must be a file called `install.py`.
+A package should have a directory named `<package>` and in it there must be a file called `install.py`.
+Or just a python file which named `<package>.py`.
 Do you can write script just with python at all.
 
 The `install.py` is just a common python file, but it'll be executed with `exec()`,
@@ -120,9 +141,10 @@ ido install zlib -i https://yourname/packages (Not implemented yet)
 ido install zlib -i ~/packages -i https://yourname/packages
 ```
 
-You can also defined in environment variable `IDO_PACKAGES`, so the searching order is:
+You can also defined in environment variable `IDO_INDEXES`, so the searching order is:
 
 1. command line argument
+1. settings file
 1. environment variable
 1. default `ido/packages`
 
@@ -172,17 +194,16 @@ it at `ido/packages/zlib` , and there is an `install.py` file in it. The content
 is :
 
 ```
-filename = wget('http://zlib.net/zlib-1.2.8.tar.gz')
-filename = cp(filename, BUILD)
+filename = cp('zlib*', BUILD, wget='http://zlib.net/zlib-1.2.8.tar.gz')
 cd(BUILD)
-sh('tar xvfz %s' % filename)
-cd('zlib-1.2.8')
+cd(tar(filename))
 sh('./configure --prefix=%s' % PREFIX)
-sh('make')
+sh('make install')
 ```
 
-This demo shows how to download zlib file from internet, and compile it. But I don't
-write `make install`. Functions like `wget, cp, sh, cd` is builtin functions you can
+This demo shows how to copy zlib file to build directory, and if not existed, it'll
+download zlib file from internet, then compile it, and install it. Functions
+like `cp`, `sh`, `cd`, `tar` is builtin functions you can
 use directly. `BUILD` , `PREFIX` is builtin variables which you can also use directly.
 
 ## Builtin Funtions
@@ -210,12 +231,20 @@ you can use the returned filename later.
 ### cp
 
 ```
-def cp(src, dst, in_path=None) -> filename
+def cp(src, dst, in_path=None, wget=None) -> filename
 ```
 
 It'll copy source file to destination directory. And it also supports filename pattern
 like: `'zlib*'`, etc. If the source filename is relative, it'll search the file according
-to `in_path` or `-f` parameter of command line.
+to `in_path` or `-f` parameter of command line. And if the filename is not found, then
+it'll use `wget` command to download according `wget` parameter, for example:
+
+```
+filename = cp('zlib*', BUILD, wget='http://zlib.net/zlib-1.2.8.tar.gz')
+```
+
+If the command is successful, it'll only return the basename of the filen. For example: `zlib-1.2.8.tar.gz`
+without the path.
 
 ### sh
 
@@ -231,7 +260,13 @@ It'll execute the command line in a shell.
 def cd(path)
 ```
 
-Changes current directory to `path`.
+Changes current directory to `path`. And it also support `with` statement, for example:
+
+```
+with cd('/tmp'):
+    #do
+#it'll change back to old path
+```
 
 ### mkdir
 
@@ -241,6 +276,97 @@ def mkdir(path)
 
 It'll check if the `path` is already existed, if not then make directories using `os.makedirs`
 
+### tarx
+
+```
+def tarx(filename, flags='xvfz')
+```
+
+It'll extract tarball file to current directory, if you want to create tarbar file,
+you should use `sh('tar cvfz test.tar.gz files')` command.
+
+And it'll return the extracted directory after extracing the tarbar file. So you can change
+dirctory after extract tarbar easily `cd(tarx(filename))`
+
+### unzip
+
+```
+def unzip(filename, flags='')
+```
+
+It'll extract zip file to current directory, if you want to create zip file,
+you should use `sh('zip zipfile files')` command.
+
+And it'll return the extracted directory after extracing the zip file. So you can change
+dirctory after extract tarbar easily `cd(unzip(filename))`
+
+It'll automatically add `-o` (overwrite exsited files) for you, so if you don't like
+these, you should use `sh('unzip zipfile')`
+
+## Settings
+
+Some global vairables can be also saved in a settings file, you can use `-c /path/settings.py`
+to specify a settings file otherwise it'll use `~/.ido/settings.py` by default. And you should
+know, after you first installed ido, there should not be a default settings.py, so you should
+give it through command line option or create it in `~/.ido` by yourself.
+
+Settings file is a pure python file, and the content of it should look like:
+
+```
+INDEXES = []
+PREFIX = '$HOME/env'
+FILES = '$HOME/files'
+PRE_LOAD = [('sh', 'SH')]
+```
+
+`PREFIX` and `FILES` just like the environment variables `IDO_PREFIX` and `IDO_FILES` or command
+line options `-p --prefix` and `-f --files`.
+
+`PRE_LOAD` used to pretend import some object from given module path, the example above menas:
+import `sh` module and alias it as `SH` , so that you can use `SH` directly in your installation
+script.
+
+And the format of `PRE_LOAD` could be:
+
+```
+PRE_LOAD = [
+    ('module_path', 'alias_name'),
+    ('module_path', '*'),
+    ('module_path', ['a', 'b']),
+]
+```
+
+The example above demonstrates three formats:
+
+1. import `module_path` and alias it as `alias_name`, for example: ('os.path', 'PATH')
+2. import `module_path` and add objects which defined in `__all__` to script namespace
+3. import `module_path` and only add objects `a` and `b` to script namespace
+
+So if you have third party module want to used in script, you can do like above.
+
+There is an example settings file in ido source named `settings.py.example`
+
+## Builtin Packages
+
+* ido_init It'll create BUILD and CACHE directory, and output the environment variables
+* demo  A demo package
+* nginx Install nginx via source
+* redis Install redis via source
+* zlib Install redis via zlib
+
 ## License
 
 New BSD
+
+## Change Log
+
+* 0.1
+    * First release
+* 0.2
+    * Improve cd function, supports `with` statement
+    * Index could be a link, so you can execute command from net
+    * Improve `tarx` and `unzip`
+    * Improve `cp`, add `wget` parameter, so if file not found, it'll download according `wget`
+      parameter via `wget` tool
+    * Add settings config support
+    * Add `nginx`, `pcre`, `redis` examples
