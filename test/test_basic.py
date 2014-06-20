@@ -67,7 +67,6 @@ def test_settings():
     #   Found script file .../ido/packages/ido_init.py of ido_init
     --> Installing package ido_init
     PREFIX=/tmp/env
-    HOME=/Users/limodou
     BUILD=/tmp/ido_packages_build
     FILES=/tmp
     CACHE=.../.ido/cache
