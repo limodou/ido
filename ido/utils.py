@@ -75,7 +75,7 @@ class ShellFunction(Function):
         from . import strip_color
 
         try:
-            buf = tempfile.NamedTemporaryFile(mode='rw', delete=False)
+            buf = tempfile.NamedTemporaryFile(mode='w+', delete=False)
 
             cwd = kwargs.pop('cwd', '')
             if not cwd:
@@ -114,17 +114,18 @@ class TarxFunction(Function):
     def __call__(self, filename, flags='xvfz'):
         sh = ShellFunction(self.build, self.log, self.verbose, self.message)
         sh('tar %s %s' % (flags, filename))
-        result = check_output('tar tf %s' % filename, shell=True, cwd=os.getcwd())
         paths = {}
+        result = check_output('tar tf %s' % filename, shell=True, cwd=os.getcwd(),
+                              universal_newlines=True)
         for line in result.splitlines():
             p = line.split('/', 1)[0]
             paths[p] = paths.setdefault(p, 0) + 1
         if not paths:
             return ''
         if len(paths) == 1:
-            return paths.keys()[0]
-        for p in reversed([(v, k) for k, v in paths.items()]):
-            return k
+            return list(paths.keys())[0]
+        for x, y in reversed([(v, k) for k, v in paths.items()]):
+            return y
 
 class UnzipFunction(Function):
     """
@@ -140,9 +141,10 @@ class UnzipFunction(Function):
         if flags:
             flags = '-' + flags + ' '
         sh('unzip %s%s' % (flags, filename))
-        result = check_output('unzip -l %s' % filename, shell=True, cwd=os.getcwd())
         paths = {}
         _in = False
+        result = check_output('unzip -l %s' % filename, shell=True, cwd=os.getcwd(),
+                              universal_newlines=True)
         for line in result.splitlines():
             line = line.lstrip()
             if line.lstrip().startswith('----'):
@@ -159,9 +161,9 @@ class UnzipFunction(Function):
         if not paths:
             return ''
         if len(paths) == 1:
-            return paths.keys()[0]
-        for p in reversed([(v, k) for k, v in paths.items()]):
-            return k
+            return list(paths.keys())[0]
+        for x, y in reversed([(v, k) for k, v in paths.items()]):
+            return y
 
 class ChdirFunction(Function):
     name = 'cd'
