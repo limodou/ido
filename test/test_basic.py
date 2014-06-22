@@ -105,3 +105,23 @@ def test_unzip():
     Installing package test_unzip completed.
     #   The shell command result can be see in /tmp/ido.log
     """
+
+def test_createindex():
+    """
+    >>> path = os.path.dirname(__file__)
+    >>> packages = os.path.join(path, 'packages')
+    >>> call('ido createindex %s --nocolor' % packages) # doctest:+ELLIPSIS
+    #   Index .../packages/index.txt created successful!
+    """
+
+def test_search():
+    """
+    >>> path = os.path.dirname(__file__)
+    >>> packages = os.path.join(path, 'packages')
+    >>> call('ido search p -i %s --nocolor' % packages) # doctest:+ELLIPSIS
+    pkg1
+    pkg2
+    test_unzip
+    pcre
+    <BLANKLINE>
+    """

@@ -11,9 +11,9 @@ from .commands import register_command, Command, get_answer, get_input
 from colorama import init, Fore, Back, Style
 from functools import partial
 
-__version__ = '0.2'
+__version__ = '0.3'
 
-init(autoreset=True)
+#init(autoreset=True)
 
 class Error(Exception): pass
 
@@ -64,31 +64,36 @@ class BaseCommand(Command):
     indent = 0
 
     def find_package_script(self, indexes, package):
+        files = [os.path.join(package, 'install.py'), '%s.py' % package]
+        r =  self._find_files(indexes, files)
+        if r:
+            self.message('Found script file %s of %s' % (r[0], Fore.GREEN+Style.BRIGHT+package), 'prompt')
+        return r
+
+    def _find_files(self, indexes, files):
         import requests
 
         for i in indexes:
-            package_install_script = os.path.join(i, package, 'install.py')
-            package_script = os.path.join(i, '%s.py' % package)
             #test if is locally
-            for f in [package_install_script, package_script]:
-                if os.path.exists(f):
-                    self.message('Found script file %s of %s' % (f, Fore.GREEN+Style.BRIGHT+package), 'prompt')
-                    return f, open(f).read()
+            for f in files:
+                filename = os.path.join(i, f)
+                if os.path.exists(filename):
+                    return filename, open(filename).read()
             #test if is in the net
             if '://' in i:
-                for f in [package_install_script, package_script]:
+                for f in files:
                     try:
-                        r = requests.get(f)
+                        filename = os.path.join(i, f)
+                        r = requests.get(filename)
                         if r.status_code == 404:
                             continue
-                        self.message('Found script file %s of %s' % (f, Fore.GREEN+Style.BRIGHT+package), 'prompt')
-                        return f, r.content
+                        return filename, r.content
                     except Exception as e:
                         if self.verbose:
                             type, value, tb = sys.exc_info()
                             txt =  ''.join(traceback.format_exception(type, value, tb))
                             print (txt)
-                        self.message('Get %s error!' % f, 'error')
+                        self.message('Get %s error!' % filename, 'error')
                         continue
 
 
@@ -167,7 +172,7 @@ class InstallCommand(BaseCommand):
 
     def handle(self, options, global_options, *args):
         if len(args) == 0:
-            self.message("You should give at least one package name.")
+            self.message("You should give at least one package name.", 'error')
             return
 
         self.verbose = global_options.verbose
@@ -345,7 +350,7 @@ class ViewPackageCommand(BaseCommand):
 
     def handle(self, options, global_options, *args):
         if len(args) == 0:
-            self.message("You should give at least one package name.")
+            self.message("You should give at least one package name.", 'error')
             return
 
         indexes = self.collection_index()
@@ -368,6 +373,111 @@ class ViewPackageCommand(BaseCommand):
 
 
 register_command(ViewPackageCommand)
+
+class SearchPackageCommand(BaseCommand):
+    """
+    View install.py of a package
+
+    """
+    name = 'search'
+    help = ("search a package from indexes")
+    args = 'package'
+    option_list = (
+        make_option('-i', '--index', dest='index', default=[], action='append',
+            help='Package index link, it can be a directory or an url.'),
+        make_option('--nocolor', dest='nocolor', default=False, action='store_true',
+            help='Output result without color.'),
+   )
+
+    def handle(self, options, global_options, *args):
+        if len(args) == 0:
+            self.message("You should give at least one package name.", 'error')
+            return
+
+        indexes = self.collection_index()
+
+        package = args[0]
+        for script, content in self._find_files(indexes, ['index.txt']):
+            if self.global_options.verbose:
+                print ('index is %s:' % script)
+            for line in content.splitlines():
+                if package in line and not line.startswith('_'):
+                    print (line.strip(), sep=' ')
+        print ()
+
+    def _find_files(self, indexes, files):
+        import requests
+
+        for i in indexes:
+            #test if is in the net
+            if '://' in i:
+                for f in files:
+                    try:
+                        filename = os.path.join(i, f)
+                        r = requests.get(filename)
+                        if r.status_code == 404:
+                            continue
+                        yield filename, r.content
+                    except Exception as e:
+                        if self.verbose:
+                            type, value, tb = sys.exc_info()
+                            txt =  ''.join(traceback.format_exception(type, value, tb))
+                            print (txt)
+                        self.message('Get %s error!' % filename, 'error')
+                        continue
+            #test if is locally
+            else:
+                for f in files:
+                    filename = os.path.join(i, f)
+                    if os.path.exists(filename):
+                        yield filename, open(filename).read()
+
+        raise StopIteration
+
+register_command(SearchPackageCommand)
+
+class CreateIndexPackageCommand(BaseCommand):
+    """
+    View install.py of a package
+
+    """
+    name = 'createindex'
+    help = ("Create index.txt for an index.")
+    args = '[index-directory]'
+    option_list = (
+        make_option('--nocolor', dest='nocolor', default=False, action='store_true',
+            help='Output result without color.'),
+   )
+
+    def handle(self, options, global_options, *args):
+        if len(args) == 0:
+            path = os.path.join(os.path.dirname(__file__), 'packages').replace('\\', '/')
+        else:
+            path = args[0]
+
+        if not os.path.exists(path):
+            self.message("Directory %s is not existed." % path, 'error')
+            return
+
+        packages = []
+        for f in os.listdir(path):
+            if f.startswith('_'):
+                continue
+            if os.path.isdir(os.path.join(path, f)):
+                script = os.path.join(path, f, 'install.py')
+                if os.path.exists(script):
+                    packages.append(f)
+            else:
+                if f.endswith('.py'):
+                    packages.append(f[:-3])
+        index_file = os.path.join(path, 'index.txt')
+        with open(index_file, 'w') as f:
+            f.write('\n'.join(packages))
+            f.write('\n')
+
+        self.message("Index %s created successful!" % index_file, 'prompt')
+
+register_command(CreateIndexPackageCommand)
 
 def call(args=None):
     from .commands import execute_command_line, get_commands

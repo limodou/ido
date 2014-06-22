@@ -1,0 +1,6 @@
+demo
+ido_init
+nginx
+pcre
+redis
+zlib
