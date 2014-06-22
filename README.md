@@ -206,6 +206,24 @@ download zlib file from internet, then compile it, and install it. Functions
 like `cp`, `sh`, `cd`, `tar` is builtin functions you can
 use directly. `BUILD` , `PREFIX` is builtin variables which you can also use directly.
 
+In order to compatible with `call` command, you could wrap the script with a `cal()` function,
+just like:
+
+```
+def call(args, options):
+    filename = cp('zlib*', BUILD, wget='http://zlib.net/zlib-1.2.8.tar.gz')
+    cd(BUILD)
+    cd(tar(filename))
+    sh('./configure --prefix=%s' % PREFIX)
+    sh('make install')
+```
+
+So that you could define command line options in it and call it via `ido call package`.
+
+There different between them is: `install` can install multi packages, and with no options.
+But `call` can only install one package, but you could provide options to it. So for simple
+script, `install` is enough, but for complex script, you could use `call`.
+
 ## Builtin Funtions
 
 ### wget
@@ -346,6 +364,55 @@ So if you have third party module want to used in script, you can do like above.
 
 There is an example settings file in ido source named `settings.py.example`
 
+## Searching and Create Index
+
+If you don't know if there is a package which you want to install, you could use
+
+```
+ido search pattern
+```
+
+Here `pattern` could be a complete package name or substring of a package name. Using
+this command, there should be an `index.txt` file exsisted in package directory, it's just
+a plain text file, and each package should be a line in it. When searching, it'll skip
+`_` beginned name, such as `_init.py`
+
+For `index.txt` you can create by hand, or you can run `ido createindex [package_directory]`,
+ido will created for you. If you omit the `package_directory` argument, it'll search `packages`
+diretory of ido installation directory, anc save `index.txt` in it.
+
+## Run package installation script with arguments
+
+If you want to install a package with some customized arguments, so how to do that?
+
+First, you should change your script just like:
+
+```
+option_list = (
+    make_option('-t', '--test', dest='test',
+        help='Test.'),
+)
+
+def call(args, options):
+    print (args)
+    print (options.test)
+```
+
+You should define option_list first, it just uses optparse module to make options, so `make_option`
+will imported automatically, you can directly use it.
+
+Second, you should define a function named `call(args, options)`, it just like you invoke
+`options, args= parser.parser_args(argv)`
+
+And if you want to see the options of a package script, you could:
+
+```
+ido info test_call
+```
+
+You should know, the code of `install` and `call` is some different. But you can always write
+your code in `def call(args, options):` function.
+
 ## Builtin Packages
 
 * ido_init It'll create BUILD and CACHE directory, and output the environment variables
@@ -370,3 +437,7 @@ New BSD
       parameter via `wget` tool
     * Add settings config support
     * Add `nginx`, `pcre`, `redis` examples
+* 0.3
+    * Add `search` and `createindex` subcommands, you can create an index file to a
+      packages directory, and use `ido search package` to search if the package existed
+    * Add `call` and `info` subcommands, you can make command options to a package script

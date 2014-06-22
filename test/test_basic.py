@@ -125,3 +125,27 @@ def test_search():
     pcre
     <BLANKLINE>
     """
+
+def test_call():
+    """
+    >>> path = os.path.dirname(__file__)
+    >>> packages = os.path.join(path, 'packages')
+    >>> call('ido call test_call -i %s -t abc a b c --nocolor' % packages) # doctest:+ELLIPSIS
+    #   Found script file .../packages/test_call.py of test_call
+    --> Installing package test_call
+    ['a', 'b', 'c']
+    abc
+    Installing package test_call completed.
+    #   The shell command result can be see in /tmp/ido.log
+    """
+
+def test_info():
+    """
+    >>> path = os.path.dirname(__file__)
+    >>> packages = os.path.join(path, 'packages')
+    >>> call('ido info test_call -i %s --nocolor' % packages) # doctest:+ELLIPSIS
+    #   Found script file .../packages/test_call.py of test_call
+    --> Help package test_call
+    Options:
+      -t TEST, --test=TEST  Test.
+    """
