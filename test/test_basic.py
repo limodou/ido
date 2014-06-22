@@ -118,11 +118,8 @@ def test_search():
     """
     >>> path = os.path.dirname(__file__)
     >>> packages = os.path.join(path, 'packages')
-    >>> call('ido search p -i %s --nocolor' % packages) # doctest:+ELLIPSIS
+    >>> call('ido search pkg1 -i %s --nocolor' % packages) # doctest:+ELLIPSIS
     pkg1
-    pkg2
-    test_unzip
-    pcre
     <BLANKLINE>
     """
 
