@@ -1,3 +1,4 @@
+usage = '[options] args'
 option_list = (
     make_option('-t', '--test', dest='test',
         help='Test.'),

@@ -617,10 +617,11 @@ class InfoCommand(CallCommand):
                     self.indexes.insert(0, p)
 
         def callback(script, code, env):
+            usage = env.get('usage', '[options] args args')
             option_list = env.get('option_list', [])
             if option_list:
                 parser = OptionParser(prog=self.prog_name,
-                    usage='',
+                    usage='ido call '+subcommand + ' ' + usage,
                     version='',
                     add_help_option = False,
                     option_list=option_list)

@@ -388,6 +388,7 @@ If you want to install a package with some customized arguments, so how to do th
 First, you should change your script just like:
 
 ```
+usage = '[options] args'
 option_list = (
     make_option('-t', '--test', dest='test',
         help='Test.'),
@@ -398,10 +399,11 @@ def call(args, options):
     print (options.test)
 ```
 
-You should define option_list first, it just uses optparse module to make options, so `make_option`
-will imported automatically, you can directly use it.
+You should define `option_list`, it just uses optparse module to make options, so `make_option`
+will imported automatically, you can directly use it. And you can also define `usage` to
+description the usage of this command.
 
-Second, you should define a function named `call(args, options)`, it just like you invoke
+Then, you should define a function named `call(args, options)`, it just like you invoke
 `options, args= parser.parser_args(argv)`
 
 And if you want to see the options of a package script, you could:
@@ -410,7 +412,17 @@ And if you want to see the options of a package script, you could:
 ido info test_call
 ```
 
-You should know, the code of `install` and `call` is some different. But you can always write
+The result should look like:
+
+```
+--> Help package test_call
+Usage: ido call test_call [options] args
+
+Options:
+  -t TEST, --test=TEST  Test.
+```
+
+You should know, the code of `install` and `call` is different a bit. But you can always write
 your code in `def call(args, options):` function.
 
 ## Builtin Packages
@@ -441,3 +453,5 @@ New BSD
     * Add `search` and `createindex` subcommands, you can create an index file to a
       packages directory, and use `ido search package` to search if the package existed
     * Add `call` and `info` subcommands, you can make command options to a package script
+* 0.3.1
+    * Add `usage` definition in script

@@ -143,6 +143,8 @@ def test_info():
     >>> call('ido info test_call -i %s --nocolor' % packages) # doctest:+ELLIPSIS
     #   Found script file .../packages/test_call.py of test_call
     --> Help package test_call
+    Usage: ido call test_call [options] args
+    <BLANKLINE>
     Options:
       -t TEST, --test=TEST  Test.
     """
