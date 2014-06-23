@@ -184,9 +184,9 @@ class InstallCommandMixin(object):
         #PREFIX will be used to install package with prefix=
         #it can be set in environment variables as IDO_PREFIX
         #or passed in command argumanet -p --prefix
-        self.prefix = d['PREFIX'] = os.path.expanduser(os.path.expandvars(self.options.prefix \
+        self.prefix = d['PREFIX'] = os.path.abspath(os.path.expanduser(os.path.expandvars(self.options.prefix \
                                     or self.settings.get('PREFIX', '') \
-                                    or os.environ.get('IDO_PREFIX', '')))
+                                    or os.environ.get('IDO_PREFIX', ''))))
         self.home = d['HOME'] = os.environ['HOME']
         self.files = d['FILES'] = os.path.expanduser(os.path.expandvars(self.options.files \
                                     or self.settings.get('FILES', '') \
