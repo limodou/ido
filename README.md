@@ -455,3 +455,4 @@ New BSD
     * Add `call` and `info` subcommands, you can make command options to a package script
 * 0.3.1
     * Add `usage` definition in script
+    * Fix relative for PREFIX, FILES etc bug #4

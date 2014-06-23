@@ -12,7 +12,7 @@ from .commands import register_command, Command, get_answer, get_input, \
 from colorama import init, Fore, Back, Style
 from functools import partial
 
-__version__ = '0.3'
+__version__ = '0.3.1'
 
 #init(autoreset=True)
 
@@ -188,9 +188,9 @@ class InstallCommandMixin(object):
                                     or self.settings.get('PREFIX', '') \
                                     or os.environ.get('IDO_PREFIX', ''))))
         self.home = d['HOME'] = os.environ['HOME']
-        self.files = d['FILES'] = os.path.expanduser(os.path.expandvars(self.options.files \
+        self.files = d['FILES'] = os.path.abspath(os.path.expanduser(os.path.expandvars(self.options.files \
                                     or self.settings.get('FILES', '') \
-                                    or os.environ.get('IDO_FILES', '')))
+                                    or os.environ.get('IDO_FILES', ''))))
         d['install'] = partial(self.install, indent=self.indent+4)
 
         for k in dir(utils):
@@ -341,6 +341,8 @@ class InstallCommand(BaseCommandMixin, InstallCommandMixin, Command):
             for p in self.settings['INDEXES']:
                 if p not in self.indexes:
                     self.indexes.insert(0, p)
+
+        self.indexes = [os.path.abspath(p) for p in self.indexes]
 
         if not self.verbose:
             self.quiet = True
