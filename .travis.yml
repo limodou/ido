@@ -7,6 +7,6 @@ python:
 
 install:
     - pip install tox
-    - pip install -q -e . --use-mirrors
+    - pip install .
 script:
     - tox
