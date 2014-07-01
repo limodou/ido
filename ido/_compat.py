@@ -52,7 +52,7 @@ if not PY2:
         if isinstance(s, str):
             return s
         else:
-            return s.decode(encoding)
+            return str(s)
 
     def b(s):
         if isinstance(s, bytes):
@@ -98,16 +98,16 @@ else:
         return cls
 
     def u(s, encoding='utf8'):
-        if isinstance(s, str):
-            return unicode(s, encoding)
-        else:
+        if isinstance(s, unicode):
             return s
+        else:
+            return unicode(str(s), encoding)
 
     def b(s, encoding='utf8'):
         if isinstance(s, unicode):
             return s.decode(encoding)
         else:
-            return s
+            return str(s)
 
     def exec_(code, globs=None, locs=None):
         """Execute code in a namespace."""
@@ -252,7 +252,7 @@ def import_(module, objects=None, via=None):
     :return: object or module
     """
     if PY3:
-        mod = __import__(module)
+        mod = __import__(module, fromlist=['*'])
     else:
         path = modules_mapping.get(module)
         if not path:
@@ -261,14 +261,17 @@ def import_(module, objects=None, via=None):
             if not via:
                 raise Exception("You should give a via parameter to enable import from py2.")
             path = via
-        mod = __import__(path)
+        mod = __import__(path, fromlist=['*'])
 
     if objects:
         if not isinstance(objects, (list, tuple)):
             raise Exception("objects parameter should be a list or tuple.")
         r = []
         for x in objects:
-            x = getattr(mod, x)
-        return tuple(x)
+            r.append(getattr(mod, x))
+        if len(r) > 1:
+            return tuple(r)
+        else:
+            return r[0]
     else:
         return mod
