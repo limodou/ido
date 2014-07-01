@@ -456,3 +456,5 @@ New BSD
 * 0.3.1
     * Add `usage` definition in script
     * Fix relative for PREFIX, FILES etc bug #4
+* 0.4
+    * Refactor py2&3 compatiable layout with _compat.py
