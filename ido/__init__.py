@@ -1,6 +1,4 @@
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
+from __future__ import print_function, absolute_import, unicode_literals
 import os, sys
 import datetime
 import inspect
@@ -12,7 +10,7 @@ from .commands import register_command, Command, get_answer, get_input, \
 from colorama import init, Fore, Back, Style
 from functools import partial
 
-__version__ = '0.3.1'
+__version__ = '0.4'
 
 #init(autoreset=True)
 
@@ -156,7 +154,7 @@ class BaseCommandMixin(object):
             self.settings = {}
 
     def exec_code(self, filename, code, env):
-        from future.utils import exec_
+        from ._compat import exec_
 
         try:
             env['__name__'] = filename
