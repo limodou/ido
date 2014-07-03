@@ -9,7 +9,8 @@ from .commands import register_command, Command, get_answer, get_input, \
     CommandManager, OptionParser, NewOptionParser, NewFormatter
 from colorama import init, Fore, Back, Style
 from functools import partial
-from .version import __version__
+
+__version__ = '0.5'
 
 #init(autoreset=True)
 

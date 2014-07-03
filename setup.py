@@ -3,7 +3,6 @@ __doc__ = open('README.md').read()
 from setuptools import setup
 from setuptools.command import build_py as b
 import os
-from ido.version import __version__
 
 def copy_dir(self, package, src, dst):
     self.mkpath(dst)
@@ -50,7 +49,7 @@ def get_source_files(self):
 setattr(b.build_py, 'get_source_files', get_source_files)
 
 setup(name='ido',
-    version=__version__,
+    version='0.5',
     description="A command tool used to install packages and execute commands.",
     long_description=__doc__,
     classifiers=[
