@@ -7,6 +7,6 @@ python:
 
 install:
     - pip install tox
-    - pip install .
+    - pip install -e .
 script:
     - tox
