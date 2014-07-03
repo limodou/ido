@@ -124,7 +124,11 @@ There are also some builtin functions, objects or modules, such as:
     * `cp()` Used to copy a source file(can use fnmatch to match the filename) to destination directory or file, `cp('zlib*', BUILD)`
     * `install()` Used to install other package, `install('zlib')`
     * `message()` Used to output colored message, `message(msg, 'error')`, the second argument
-      will be `error`, `info`, `prompt` or just omitted.
+      will be `error`, `info`, `prompt`, `cmd` or just omitted.
+    * `tarx()` Used to execute untar a tarball file, `tarx('a.tar.gz')`
+    * `unzip()` Used to uncompress zip file, `unzip('a.zip')`
+    * `pip()` Used to call pip tool to install package
+
 * Color Objects
     * `Fore`, `Back`, `Style` They are colorama objects, so you can use them directly.
 
@@ -233,15 +237,14 @@ def wget(filename, in_path=None) -> filename
 ```
 
 It'll try to download the remote file. But ido also can cache the downloaded file in
-`CACHE` directory, and it's `$HOME/.ido/cache` by default. So if a file is already
-downloaded, it'll not download it again. Besides CACHE directory, if you give `in_path`
+`FILES` directory. So if a file is already
+downloaded, it'll not download it again. And you can also give `in_path`
 parameter to wget function or just give `-f files_directory`
 in the command line, ido will also search files in these directories, so the order of search
 a filename which need to be downloaded is:
 
 1. `in_path` parameter directory
 1. directory of `-f` parameter of command line
-1. CACHE directory
 
 IF wget download or just find an existed file, it'll return the real filename of it, so
 you can use the returned filename later.
@@ -320,6 +323,34 @@ dirctory after extract tarbar easily `cd(unzip(filename))`
 
 It'll automatically add `-o` (overwrite exsited files) for you, so if you don't like
 these, you should use `sh('unzip zipfile')`
+
+### pip
+
+```
+def pip(packages, index=None, requirements=None)
+```
+
+It'll use pip command tool to install python packages. `packages` can be a tuple, list or just
+single package name, for example:
+
+```
+pip(['uliweb', 'plugs'])
+pip('uliweb')
+```
+
+By default, pip will use local diretory to find the packages, so you should pass `-f` parameter
+in the command line, if you don't pass it, the default package directory will be current directory.
+And pip() will try to install packages in files directory, if it fails, it'll try to download
+the package and saved them in files directory, and install it again. So after execute pip()
+function, the package file will be found in files directory.
+
+And you can also pass it `requirements` parameter, it'll use `pip install -r requirements.txt`
+command line to install it, and it'll try to install in locally first, if failed, it'll try to
+install with index.
+
+```
+pip(requirements='requirements.txt')
+```
 
 ## Settings
 
@@ -427,7 +458,7 @@ your code in `def call(args, options):` function.
 
 ## Builtin Packages
 
-* ido_init It'll create BUILD and CACHE directory, and output the environment variables
+* ido_init It'll create BUILD directory, and output the environment variables
 * demo  A demo package
 * nginx Install nginx via source
 * redis Install redis via source
@@ -461,3 +492,5 @@ New BSD
 * 0.5
     * Change installation script filename extension from `.py` to `.ido`
     * ido will search current directory by default, so you can run `ido install your.ido` directly
+    * Remove cache option, and you should use files option always.
+    * Add `pip()` function

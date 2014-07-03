@@ -69,7 +69,6 @@ def test_settings():
     PREFIX=/tmp/env
     BUILD=/tmp/ido_packages_build
     FILES=/tmp
-    CACHE=.../.ido/cache
     Installing package ido_init completed.
     #   The shell command result can be see in /tmp/ido.log
 

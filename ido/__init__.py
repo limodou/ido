@@ -172,14 +172,13 @@ class BaseCommandMixin(object):
             raise
 
 class InstallCommandMixin(object):
-    def make_env(self, script, code, args=None, options=None):
+    def make_env(self, script, code):
         from . import utils
 
         #load settings file
         d = {}
         d['INDEXES'] = self.indexes
         self.build = d['BUILD'] = '/tmp/ido_packages_build'
-        self.cache = d['CACHE'] = os.path.expandvars('$HOME/.ido/cache')
         #PREFIX will be used to install package with prefix=
         #it can be set in environment variables as IDO_PREFIX
         #or passed in command argumanet -p --prefix
@@ -190,6 +189,7 @@ class InstallCommandMixin(object):
         self.files = d['FILES'] = os.path.abspath(os.path.expanduser(os.path.expandvars(self.options.files \
                                     or self.settings.get('FILES', '') \
                                     or os.environ.get('IDO_FILES', ''))))
+
         d['install'] = partial(self.install, indent=self.indent+4)
 
         for k in dir(utils):

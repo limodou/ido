@@ -3,6 +3,7 @@ import os
 import shutil
 import subprocess as sub
 from functools import partial
+from ._compat import reraise
 
 if not hasattr(sub, 'check_output'):
     from subprocess import CalledProcessError, Popen, PIPE
@@ -196,7 +197,7 @@ class MkdirFunction(Function):
 class WgetFunction(Function):
     name = 'wget'
     def __call__(self, filename, in_path=None):
-        paths = [in_path, self.build.files, self.build.cache]
+        paths = [in_path, self.build.files]
         self.message('wget %s' % filename, 'cmd', indent=4)
         _file = os.path.basename(filename)
         for p in paths:
@@ -205,7 +206,7 @@ class WgetFunction(Function):
                 self.message("The file is already existed in %s directory!" % p, 'info', indent=4)
                 return os.path.join(p, _file)
 
-        in_path = in_path or self.build.files or self.build.cache
+        in_path = in_path or self.build.files
         check_output('wget -c -N '+filename, cwd=in_path, shell=True)
 
         return os.path.join(in_path, _file)
@@ -216,7 +217,7 @@ class CpFunction(Function):
         import shutil
         from glob import glob
 
-        paths = [in_path, self.build.files, self.build.cache]
+        paths = [in_path, self.build.files]
         for p in paths:
             if not p: continue
             d_src = os.path.join(p, src)
@@ -230,3 +231,57 @@ class CpFunction(Function):
             message = partial(self.message, indent=4)
             w = WgetFunction(self.build, self.log, self.verbose, message)
             return w(wget)
+
+class PipFunction(Function):
+    name = 'pip'
+    def __call__(self, packages=None, index=None, requirements=None, args=''):
+
+        if args:
+            args = ' '+args
+        if requirements:
+            cmd = ' '.join(['pip', 'install', '-f', self.build.files, args, '--no-index', '-r',
+                   requirements])
+            self.message(cmd, 'cmd', indent=4)
+            try:
+                check_output(cmd, shell=True)
+            except:
+                self.message('pip install %s' % requirements, 'error', indent=8)
+                if index:
+                    o_index = '-i %s ' % index
+                else:
+                    o_index = ''
+                cmd = ' '.join(['pip', 'install', o_index, args, '-r', requirements])
+                self.message(cmd, 'cmd', indent=4)
+                check_output(cmd, shell=True)
+
+            return
+        elif not isinstance(packages, (tuple, list)):
+            packages = [packages]
+
+        for p in packages:
+            self._install(p, index, args)
+
+    def _install(self, package, index=None, args=''):
+        from glob import glob
+
+        cmd = ' '.join(['pip', 'install', '-f', self.build.files, '--no-index',
+                        args, package])
+        self.message(cmd, 'cmd', indent=4)
+        try:
+            check_output(cmd, shell=True)
+        except:
+            self.message('pip install %s' % package, 'error', indent=8)
+            #try to download first
+            if index:
+                o_index = '-i %s ' % index
+            else:
+                o_index = ''
+            cmd = ' '.join(['pip', 'install', '-d', self.build.files,
+                            o_index, args, package])
+            self.message('pip download %s' % package, 'cmd', indent=4)
+            check_output(cmd, shell=True)
+            cmd = ' '.join(['pip', 'install', '-f', self.build.files, '--no-index',
+                            args, package])
+            self.message(cmd, 'cmd', indent=4)
+            check_output(cmd, shell=True)
+        return True
