@@ -9,8 +9,7 @@ from .commands import register_command, Command, get_answer, get_input, \
     CommandManager, OptionParser, NewOptionParser, NewFormatter
 from colorama import init, Fore, Back, Style
 from functools import partial
-
-__version__ = '0.4'
+from .version import __version__
 
 #init(autoreset=True)
 
@@ -63,7 +62,7 @@ class BaseCommandMixin(object):
     indent = 0
 
     def find_package_script(self, indexes, package):
-        files = [os.path.join(package, 'install.py'), '%s.py' % package]
+        files = [os.path.join(package, 'install.ido'), '%s.ido' % package]
         r =  self._find_files(indexes, files)
         if r:
             self.message('Found script file %s of %s' % (r[0], Fore.GREEN+Style.BRIGHT+package), 'prompt')
@@ -105,6 +104,8 @@ class BaseCommandMixin(object):
         """
 
         indexes = self.options.index
+        #add current directory to indexes
+        indexes.insert(0, os.getcwd())
         if 'IDO_INDEXES' in os.environ:
             indexes.extend(os.environ['IDO_INDEXES'].split(';'))
 
@@ -364,19 +365,19 @@ register_command(InstallCommand)
 
 class ViewPackageCommand(BaseCommandMixin, Command):
     """
-    View install.py of a package
+    View installation script of a package
 
     """
     name = 'view'
-    help = ("View install.py of a package")
+    help = ("View installation script of a package")
     args = 'package'
     option_list = (
         make_option('-i', '--index', dest='index', default=[], action='append',
             help='Package index link, it can be a directory or an url.'),
         make_option('-e', '--editor', dest='editor', default='vi',
-            help='Editor used to open install.py of the package.'),
+            help='Editor used to open installation script of the package.'),
         make_option('-d', '--display', dest='display', default=False, action='store_true',
-            help='Just display install.py content but not edit it.'),
+            help='Just display installation script content but not edit it.'),
         make_option('--nocolor', dest='nocolor', default=False, action='store_true',
             help='Output result without color.'),
    )
@@ -409,7 +410,7 @@ register_command(ViewPackageCommand)
 
 class SearchPackageCommand(BaseCommandMixin, Command):
     """
-    View install.py of a package
+    View installation script of a package
 
     """
     name = 'search'
@@ -471,7 +472,7 @@ register_command(SearchPackageCommand)
 
 class CreateIndexPackageCommand(BaseCommandMixin, Command):
     """
-    View install.py of a package
+    View installation script of a package
 
     """
     name = 'createindex'
@@ -497,11 +498,11 @@ class CreateIndexPackageCommand(BaseCommandMixin, Command):
             if f.startswith('_'):
                 continue
             if os.path.isdir(os.path.join(path, f)):
-                script = os.path.join(path, f, 'install.py')
+                script = os.path.join(path, f, 'install.ido')
                 if os.path.exists(script):
                     packages.append(f)
             else:
-                if f.endswith('.py'):
+                if f.endswith('.ido'):
                     packages.append(f[:-3])
         index_file = os.path.join(path, 'index.txt')
         with open(index_file, 'w') as f:

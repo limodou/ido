@@ -12,8 +12,8 @@ But ido can be more easily used and extended to suit your needs.
 
 * Simple core
 * Color command output
-* Packages or commands collection should be organized in a directory or a python file
-* Installation script file is common Python source file
+* Packages or commands collection should be organized in a directory or a python format file
+* Installation script file is common Python source file, but the filename extension should be `.ido`
 * Installation script can be searched from local disk or net
 * Builtin rich functions and you can easily extend
 * Packages installation aim user home first
@@ -458,3 +458,6 @@ New BSD
     * Fix relative for PREFIX, FILES etc bug #4
 * 0.4
     * Refactor py2&3 compatiable layout with _compat.py
+* 0.5
+    * Change installation script filename extension from `.py` to `.ido`
+    * ido will search current directory by default, so you can run `ido install your.ido` directly
