@@ -1,4 +1,5 @@
 zlib = cp('zlib*', BUILD, wget='http://zlib.net/zlib-1.2.8.tar.gz')
+md5sum(zlib, '44d667c142d7cda120332623eab69f40')
 cd(BUILD)
 cd(tarx(zlib))
 sh('./configure --prefix=%s' % PREFIX)

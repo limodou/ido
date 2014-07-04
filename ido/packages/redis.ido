@@ -1,4 +1,5 @@
 redis = cp('redis*', BUILD, wget='http://download.redis.io/releases/redis-2.8.11.tar.gz')
+sha1sum(redis, '3e3a4603781514f239f040287d3ef1097eb02a76')
 cd(BUILD)
 cd(tarx(redis))
 sh('make install PREFIX=%s' % PREFIX)

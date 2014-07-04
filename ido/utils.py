@@ -285,3 +285,23 @@ class PipFunction(Function):
             self.message(cmd, 'cmd', indent=4)
             check_output(cmd, shell=True)
         return True
+        
+class ChecksumsFunction(Function):
+    
+    def __call__(self, filename, checksums, in_path=None):
+        self.message('%s %s' % (self.name, filename), 'cmd', indent=4)
+        in_path = in_path or self.build.files or self.build.cache
+        try: 
+            result = check_output('echo "%s %s" | %s -c -' % (checksums, filename, self.name), cwd=in_path, shell=True)
+            for line in result.splitlines():
+                self.message(line, 'info', indent=8)
+        except Exception as e:
+            for line in e.output.splitlines():
+                self.message(line, 'error', indent=8)
+            raise e
+
+class Md5sumFunction(ChecksumsFunction):
+    name = 'md5sum'
+    
+class Sha1sumFunction(ChecksumsFunction):
+    name = 'sha1sum'
