@@ -176,3 +176,33 @@ def test_md5():
     Installing package test_md5 completed.
     #   The shell command result can be see in /tmp/ido.log
     """
+
+def test_md5_error():
+    """
+    >>> path = os.path.dirname(__file__)
+    >>> packages = os.path.join(path, 'packages')
+    >>> files = os.path.join(path, 'files')
+    >>> call('ido install test_md5_error -i %s -f %s --nocolor' % (packages, files)) # doctest:+ELLIPSIS
+    #   Found script file .../packages/test_md5_error.ido of test_md5_error
+    --> Installing package test_md5_error
+        ==> cp .../files/a.tar.gz /tmp/ido_packages_build
+        ==> cd /tmp/ido_packages_build
+        ==> md5sum a.tar.gz 831ba95422bf8356a303e1cdafe95ba4
+    Error: Installing package test_md5_error failed.
+    #   The shell command result can be see in /tmp/ido.log
+    """
+
+def test_sha1():
+    """
+    >>> path = os.path.dirname(__file__)
+    >>> packages = os.path.join(path, 'packages')
+    >>> files = os.path.join(path, 'files')
+    >>> call('ido install test_sha1 -i %s -f %s --nocolor' % (packages, files)) # doctest:+ELLIPSIS
+    #   Found script file .../packages/test_sha1.ido of test_sha1
+    --> Installing package test_sha1
+        ==> cp .../files/a.tar.gz /tmp/ido_packages_build
+        ==> cd /tmp/ido_packages_build
+        ==> sha1sum a.tar.gz 0f2f008da2728f3bace799f257c299ab15ae0c15
+    Installing package test_sha1 completed.
+    #   The shell command result can be see in /tmp/ido.log
+    """

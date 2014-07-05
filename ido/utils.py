@@ -256,8 +256,15 @@ class ChecksumsFunction(Function):
             return
 
         self.message('%s %s %s' % (self.name, filename, checksums), 'cmd', indent=4)
-        self.sh('echo "%s %s" | %s -c -' % (checksums, filename, self.name),
-                echo=False, log=self.log)
+        import hashlib
+        if self.name == 'md5sum':
+            m = getattr(hashlib, 'md5')
+        else:
+            m = getattr(hashlib, 'sha1')
+        d = m(open(filename, 'rb').read()).hexdigest()
+        if d != checksums:
+            raise Exception("%s %s failed" % (self.name, filename))
+        return True
 
 class Md5sumFunction(ChecksumsFunction):
     name = 'md5sum'

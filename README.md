@@ -358,8 +358,7 @@ pip(requirements='requirements.txt')
 def md5sum(filename, checksums, in_path=None)
 ```
 
-Check sum filename with md5 digest string. If you are using MAC OS, you should install gnubin
-first. You can run `brew install coreutils` with HomeBrew or `port install coreutils` with MacPorts.
+Check sum filename with md5 digest string.
 
 ### sha1sum
 
@@ -367,8 +366,7 @@ first. You can run `brew install coreutils` with HomeBrew or `port install coreu
 def md5sum(filename, checksums, in_path=None)
 ```
 
-Check sum filename with sha1 digest string. If you are using MAC OS, you should install gnubin
-first. You can run `brew install coreutils` with HomeBrew or `port install coreutils` with MacPorts.
+Check sum filename with sha1 digest string. 
 
 
 ## Settings
