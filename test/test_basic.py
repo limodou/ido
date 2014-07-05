@@ -161,3 +161,18 @@ def test_current_directory_search():
     Options:
       -t TEST, --test=TEST  Test.
     """
+
+def test_md5():
+    """
+    >>> path = os.path.dirname(__file__)
+    >>> packages = os.path.join(path, 'packages')
+    >>> files = os.path.join(path, 'files')
+    >>> call('ido install test_md5 -i %s -f %s --nocolor' % (packages, files)) # doctest:+ELLIPSIS
+    #   Found script file .../packages/test_md5.ido of test_md5
+    --> Installing package test_md5
+        ==> cp .../files/a.tar.gz /tmp/ido_packages_build
+        ==> cd /tmp/ido_packages_build
+        ==> md5sum a.tar.gz 831ba95422bf8356a303e1cdafe95ba5
+    Installing package test_md5 completed.
+    #   The shell command result can be see in /tmp/ido.log
+    """

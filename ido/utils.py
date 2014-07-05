@@ -3,44 +3,7 @@ import os
 import shutil
 import subprocess as sub
 from functools import partial
-from ._compat import reraise
-
-if not hasattr(sub, 'check_output'):
-    from subprocess import CalledProcessError, Popen, PIPE
-
-    def check_output(*popenargs, **kwargs):
-        r"""Run command with arguments and return its output as a byte string.
-
-        If the exit code was non-zero it raises a CalledProcessError.  The
-        CalledProcessError object will have the return code in the returncode
-        attribute and output in the output attribute.
-
-        The arguments are the same as for the Popen constructor.  Example:
-
-        >>> check_output(["ls", "-l", "/dev/null"])
-        'crw-rw-rw- 1 root root 1, 3 Oct 18  2007 /dev/null\n'
-
-        The stdout argument is not allowed as it is used internally.
-        To capture standard error in the result, use stderr=STDOUT.
-
-        >>> check_output(["/bin/sh", "-c",
-        ...               "ls -l non_existent_file ; exit 0"],
-        ...              stderr=STDOUT)
-        'ls: non_existent_file: No such file or directory\n'
-        """
-        if 'stdout' in kwargs:
-            raise ValueError('stdout argument not allowed, it will be overridden.')
-        process = Popen(stdout=PIPE, *popenargs, **kwargs)
-        output, unused_err = process.communicate()
-        retcode = process.poll()
-        if retcode:
-            cmd = kwargs.get("args")
-            if cmd is None:
-                cmd = popenargs[0]
-            raise CalledProcessError(retcode, cmd, output=output)
-        return output
-else:
-    check_output = sub.check_output
+from ._compat import reraise, u
 
 class Function(object):
     name = ''
@@ -52,6 +15,43 @@ class Function(object):
 
     def __call__(self, *args, **kwargs):
         raise NotImplementedError
+
+    def sh(self, cmd, echo=True, message='', log=None, **kwargs):
+        from io import StringIO
+        import tempfile
+        from . import strip_color
+
+        try:
+            buf = tempfile.NamedTemporaryFile(mode='w+', delete=False)
+
+            cwd = kwargs.pop('cwd', '')
+            if not cwd:
+                cwd = os.getcwd()
+
+            kwargs['cwd'] = cwd
+            kwargs['stdout'] = buf
+            kwargs['stderr'] = buf
+            kwargs['shell'] = True
+
+            if echo:
+                msg = message or cmd
+                self.message(msg, 'cmd', indent=4)
+
+            p = sub.Popen(cmd, **kwargs)
+            p.wait()
+
+            buf.seek(0)
+            result = buf.read()
+
+            if log:
+                log.write(strip_color(result))
+        finally:
+            buf.close()
+
+        if p.returncode:
+            raise Exception("Execute command %s failed, return code is %d" % (cmd, p.returncode))
+
+        return u(result)
 
 def function(fname):
     """
@@ -70,40 +70,9 @@ def function(fname):
 
 class ShellFunction(Function):
     name = 'sh'
-    def __call__(self, *args, **kwargs):
-        from io import StringIO
-        import tempfile
-        from . import strip_color
 
-        try:
-            buf = tempfile.NamedTemporaryFile(mode='w+', delete=False)
-
-            cwd = kwargs.pop('cwd', '')
-            if not cwd:
-                cwd = os.getcwd()
-
-            kwargs['cwd'] = cwd
-            kwargs['stdout'] = buf
-            kwargs['stderr'] = buf
-            kwargs['shell'] = True
-
-            self.message(args[0], 'cmd', indent=4)
-
-            p = sub.Popen(*args, **kwargs)
-            p.wait()
-
-            buf.seek(0)
-            result = buf.read()
-
-            if self.log:
-                self.log.write(strip_color(result))
-        finally:
-            buf.close()
-
-        if p.returncode:
-            raise Exception("Execute command %s failed, return code is %d" % (args[0], p.returncode))
-
-        return p.returncode, result
+    def __call__(self, cmd, **kwargs):
+        return self.sh(cmd, log=self.log, **kwargs)
 
 class TarxFunction(Function):
     """
@@ -113,11 +82,10 @@ class TarxFunction(Function):
     name = 'tarx'
 
     def __call__(self, filename, flags='xvfz'):
-        sh = ShellFunction(self.build, self.log, self.verbose, self.message)
-        sh('tar %s %s' % (flags, filename))
+        cmd = 'tar %s %s' % (flags, filename)
+        self.sh(cmd, log=self.log)
         paths = {}
-        result = check_output('tar tf %s' % filename, shell=True, cwd=os.getcwd(),
-                              universal_newlines=True)
+        result = self.sh('tar tf %s' % filename, echo=False)
         for line in result.splitlines():
             p = line.split('/', 1)[0]
             paths[p] = paths.setdefault(p, 0) + 1
@@ -136,16 +104,14 @@ class UnzipFunction(Function):
     name = 'unzip'
 
     def __call__(self, filename, flags=''):
-        sh = ShellFunction(self.build, self.log, self.verbose, self.message)
         if 'o' not in flags:
             flags += 'o'
         if flags:
             flags = '-' + flags + ' '
-        sh('unzip %s%s' % (flags, filename))
+        self.sh('unzip %s%s' % (flags, filename), log=self.log)
         paths = {}
         _in = False
-        result = check_output('unzip -l %s' % filename, shell=True, cwd=os.getcwd(),
-                              universal_newlines=True)
+        result = self.sh('unzip -l %s' % filename, echo=False)
         for line in result.splitlines():
             line = line.lstrip()
             if line.lstrip().startswith('----'):
@@ -207,7 +173,7 @@ class WgetFunction(Function):
                 return os.path.join(p, _file)
 
         in_path = in_path or self.build.files
-        check_output('wget -c -N '+filename, cwd=in_path, shell=True)
+        self.sh('wget -c -N '+filename, cwd=in_path, log=self.log)
 
         return os.path.join(in_path, _file)
 
@@ -241,9 +207,8 @@ class PipFunction(Function):
         if requirements:
             cmd = ' '.join(['pip', 'install', '-f', self.build.files, args, '--no-index', '-r',
                    requirements])
-            self.message(cmd, 'cmd', indent=4)
             try:
-                check_output(cmd, shell=True)
+                self.sh(cmd, log=self.log)
             except:
                 self.message('pip install %s' % requirements, 'error', indent=8)
                 if index:
@@ -251,8 +216,7 @@ class PipFunction(Function):
                 else:
                     o_index = ''
                 cmd = ' '.join(['pip', 'install', o_index, args, '-r', requirements])
-                self.message(cmd, 'cmd', indent=4)
-                check_output(cmd, shell=True)
+                self.sh(cmd, log=self.log)
 
             return
         elif not isinstance(packages, (tuple, list)):
@@ -266,9 +230,8 @@ class PipFunction(Function):
 
         cmd = ' '.join(['pip', 'install', '-f', self.build.files, '--no-index',
                         args, package])
-        self.message(cmd, 'cmd', indent=4)
         try:
-            check_output(cmd, shell=True)
+            self.sh(cmd, log=self.log)
         except:
             self.message('pip install %s' % package, 'error', indent=8)
             #try to download first
@@ -279,26 +242,22 @@ class PipFunction(Function):
             cmd = ' '.join(['pip', 'install', '-d', self.build.files,
                             o_index, args, package])
             self.message('pip download %s' % package, 'cmd', indent=4)
-            check_output(cmd, shell=True)
+            self.sh(cmd, echo=False)
             cmd = ' '.join(['pip', 'install', '-f', self.build.files, '--no-index',
                             args, package])
-            self.message(cmd, 'cmd', indent=4)
-            check_output(cmd, shell=True)
+            self.sh(cmd, log=self.log)
         return True
         
 class ChecksumsFunction(Function):
     
     def __call__(self, filename, checksums, in_path=None):
-        self.message('%s %s' % (self.name, filename), 'cmd', indent=4)
-        in_path = in_path or self.build.files or self.build.cache
-        try: 
-            result = check_output('echo "%s %s" | %s -c -' % (checksums, filename, self.name), cwd=in_path, shell=True)
-            for line in result.splitlines():
-                self.message(line, 'info', indent=8)
-        except Exception as e:
-            for line in e.output.splitlines():
-                self.message(line, 'error', indent=8)
-            raise e
+        if not os.path.exists(filename):
+            self.message("The file %s is not existed." % filename, 'error', indent=8)
+            return
+
+        self.message('%s %s %s' % (self.name, filename, checksums), 'cmd', indent=4)
+        self.sh('echo "%s %s" | %s -c -' % (checksums, filename, self.name),
+                echo=False, log=self.log)
 
 class Md5sumFunction(ChecksumsFunction):
     name = 'md5sum'

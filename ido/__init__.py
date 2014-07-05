@@ -10,7 +10,7 @@ from .commands import register_command, Command, get_answer, get_input, \
 from colorama import init, Fore, Back, Style
 from functools import partial
 
-__version__ = '0.5'
+__version__ = '0.6'
 
 #init(autoreset=True)
 

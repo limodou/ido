@@ -352,6 +352,25 @@ install with index.
 pip(requirements='requirements.txt')
 ```
 
+### md5sum
+
+```
+def md5sum(filename, checksums, in_path=None)
+```
+
+Check sum filename with md5 digest string. If you are using MAC OS, you should install gnubin
+first. You can run `brew install coreutils` with HomeBrew or `port install coreutils` with MacPorts.
+
+### sha1sum
+
+```
+def md5sum(filename, checksums, in_path=None)
+```
+
+Check sum filename with sha1 digest string. If you are using MAC OS, you should install gnubin
+first. You can run `brew install coreutils` with HomeBrew or `port install coreutils` with MacPorts.
+
+
 ## Settings
 
 Some global vairables can be also saved in a settings file, you can use `-c /path/settings.py`
@@ -494,3 +513,6 @@ New BSD
     * ido will search current directory by default, so you can run `ido install your.ido` directly
     * Remove cache option, and you should use files option always.
     * Add `pip()` function
+* 0.6
+    * Add `md5sum()` and `sha1sum()` functions
+    * Add `sh()` to Function, and refactor utils commands.
