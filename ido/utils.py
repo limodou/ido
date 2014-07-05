@@ -271,3 +271,10 @@ class Md5sumFunction(ChecksumsFunction):
     
 class Sha1sumFunction(ChecksumsFunction):
     name = 'sha1sum'
+
+class WhichFunction(Function):
+    name = 'which'
+
+    def __call__(self, command):
+        result = self.sh('which %s' % command)
+        return result

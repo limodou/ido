@@ -1,0 +1,2 @@
+which('ls')
+which('notexisted')

@@ -206,3 +206,16 @@ def test_sha1():
     Installing package test_sha1 completed.
     #   The shell command result can be see in /tmp/ido.log
     """
+
+def test_whick():
+    """
+    >>> path = os.path.dirname(__file__)
+    >>> packages = os.path.join(path, 'packages')
+    >>> call('ido install test_which -i %s --nocolor' % packages) # doctest:+ELLIPSIS
+    #   Found script file .../packages/test_which.ido of test_which
+    --> Installing package test_which
+        ==> which ls
+        ==> which notexisted
+    Error: Installing package test_which failed.
+    #   The shell command result can be see in /tmp/ido.log
+    """

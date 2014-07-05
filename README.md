@@ -366,7 +366,15 @@ Check sum filename with md5 digest string.
 def md5sum(filename, checksums, in_path=None)
 ```
 
-Check sum filename with sha1 digest string. 
+Check sum filename with sha1 digest string.
+
+### which
+
+```
+def which(command):
+```
+
+Check if the command is existed.
 
 
 ## Settings
@@ -512,5 +520,5 @@ New BSD
     * Remove cache option, and you should use files option always.
     * Add `pip()` function
 * 0.6
-    * Add `md5sum()` and `sha1sum()` functions
+    * Add `md5sum()` ,`sha1sum()`, `which` functions
     * Add `sh()` to Function, and refactor utils commands.
